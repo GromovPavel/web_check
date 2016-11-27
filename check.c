@@ -15,14 +15,14 @@
 
 int main_programm(int argc, char *argv[]);
 void show_help();
-int connet_server(char *server, char *flag, char *path);
+int connet_server(char *server, char *flag, char *arg);
 int send_string(int sock_des, char *buffer);
 int recv_line(int sock_des, char *buffer);
 int save_to_file(char *buffer, char *path);
 struct in_addr *resolve_hostname(char * server);
 
 
-struct hostent *host_info;  //Here we created strucure for retured value function gethostbyname()
+struct hostent *host_info;  
 struct in_addr *address; 
 struct sockaddr_in remote_server;
 
@@ -49,7 +49,7 @@ struct in_addr *resolve_hostname(char *server)
 	return address;
 }
 
-int connet_server(char * server, char *flag, char *path)
+int connet_server(char * server, char *flag, char *arg)
 {
 	int sock_des;
 	address = resolve_hostname(server);
@@ -57,21 +57,25 @@ int connet_server(char * server, char *flag, char *path)
 	{
 		return 1;
 	}
-	sock_des = socket(AF_INET, SOCK_STREAM, 0);
+	if ((sock_des = socket(AF_INET, SOCK_STREAM, 0)) == FAIL)
+		{
+			printf("Error.. app can't create socket\n");
+			exit(0);
+		}
+
 	remote_server.sin_family = AF_INET;
-	remote_server.sin_port = htons(PORT);
-	remote_server.sin_addr.s_addr = address->s_addr;
-	struct sockaddr *p = (struct sockaddr *)&remote_server;
-
-	if (connect(sock_des, p, sizeof(remote_server)) == FAIL)
-	{
-		printf("Error... connect to %s fail\n", server);
-	}
-
 	if (strcmp(flag, "-w") == 0)
 	{
+		remote_server.sin_port = htons(PORT);
+		remote_server.sin_addr.s_addr = address->s_addr;
+		struct sockaddr *p = (struct sockaddr *)&remote_server;
+
+		if (connect(sock_des, p, sizeof(remote_server)) == FAIL)
+		{
+			printf("Error... connect to %s fail\n", server);
+		}
 		send_string(sock_des, HEAD);
-		unsigned char buffer[8000];
+		unsigned char buffer[100];
 
 		while(recv_line(sock_des, buffer))
 		{
@@ -82,19 +86,42 @@ int connet_server(char * server, char *flag, char *path)
 		}
 		}
 	}
-
 	if (strcmp(flag, "-d") == 0)
 	{
+		remote_server.sin_port = htons(PORT);
+		remote_server.sin_addr.s_addr = address->s_addr;
+		struct sockaddr *p = (struct sockaddr *)&remote_server;
+
+		if (connect(sock_des, p, sizeof(remote_server)) == FAIL)
+		{
+			printf("Error... connect to %s fail\n", server);
+		}
+
 		send_string(sock_des, GET);
-		unsigned char buffer[26684];
+		unsigned char buffer[99999];
 		while(recv_line(sock_des, buffer))
 		{
 			
 		}
-		save_to_file(buffer, path);
-	}				
-}
+		save_to_file(buffer, arg);
+	}
+	if (strcmp(flag, "-p") == 0)
+	{
+		remote_server.sin_port = htons(atoi(arg));
+		remote_server.sin_addr.s_addr = address->s_addr;
+		struct sockaddr *p = (struct sockaddr *)&remote_server;
 
+		if(connect(sock_des, p, sizeof(remote_server)) == FAIL)
+		{
+			printf("PORT %d dosen't open on %s\n", atoi(arg), server);
+		}
+		else
+		{
+			printf("PORT %d opened\n",atoi(arg));
+		}	
+	}
+	close(sock_des);				
+}
 int send_string(int sock_des, char * buffer)
 {
 	int send_bytes, bytes_to_send;
@@ -131,7 +158,6 @@ int recv_line(int sock_des, char* destr_buffer)
 	}
 	return 0;
 }
-
 int save_to_file(char *buffer, char *path)
 {
 	FILE *file;
@@ -140,11 +166,10 @@ int save_to_file(char *buffer, char *path)
 	{
 		printf("Error...cannot open file\n");
 	}
-	
 	if ((fputs(buffer, file)) == 0)
 	{
 		printf("Error...cannot write in file\n");
 	}
-	
+
 	fclose(file);
 }
