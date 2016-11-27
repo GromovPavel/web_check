@@ -9,6 +9,7 @@ example:
 ./check -w www.google.com"          #Show name of web server.
 
 ./check -d www.google.com [path]    #Download web page.
+
 HOW TO COMPILE:
 
 ./make.sh
