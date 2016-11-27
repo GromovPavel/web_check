@@ -10,4 +10,5 @@ example:
 
 ./check -d www.google.com [path]    #Download web page.
 HOW TO COMPILE:
+
 ./make.sh
